@@ -125,6 +125,30 @@ function renderDetail(item,kind){
     +`<div class="cell"><div class="k">Milk</div><div class="v acc">${item.milk}</div></div></div>`);
   wrap.appendChild(nc);
 
+  if(kind==='r'&&(item.sizes||item.sizeNote)){
+    const sb=el('div','block','<h3>Mug size</h3>');
+    if(item.sizes){
+      const seg=el('div','seg');
+      const build=el('div','sizebuild');
+      const fill=item.sizes.mode==='water'?'Top up with the hot water function.':'Scale with more milk — do not add water.';
+      [['std','Standard'],['s8','8 oz'],['s10','10 oz']].forEach(([k,label])=>{
+        const b=el('button','seg-btn'+(k==='std'?' on':''),label);
+        b.setAttribute('aria-pressed',k==='std'?'true':'false');
+        b.onclick=()=>{
+          seg.querySelectorAll('.seg-btn').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});
+          b.classList.add('on');b.setAttribute('aria-pressed','true');
+          if(k==='std'){build.classList.remove('show');build.innerHTML='';}
+          else{build.innerHTML=`<div class="sizehead">${label} mug</div><p>${item.sizes[k]}</p><div class="sizefoot">${fill}</div>`;build.classList.add('show');}
+        };
+        seg.appendChild(b);
+      });
+      sb.appendChild(seg);sb.appendChild(build);
+    }else{
+      const n=el('div','callout');n.innerHTML=`<p>${item.sizeNote}</p>`;sb.appendChild(n);
+    }
+    wrap.appendChild(sb);
+  }
+
   const stepsBlock=el('div','block','<h3>Steps</h3>');
   stepsBlock.appendChild(stepsList(item.steps));
   wrap.appendChild(stepsBlock);

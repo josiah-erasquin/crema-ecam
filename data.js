@@ -412,3 +412,65 @@ const CARE = [
      'This resets all settings and volumes <b>except the language</b>.'],
    source:{title:'Reset your machine — De’Longhi How-To', url:'https://www.youtube.com/watch?v=9CgeqZvKKsQ'}},
 ];
+
+/* ---------------- MUG SIZES ----------------
+   Milk drinks scale with MORE MILK (never water). Black drinks scale with the
+   hot water function. Small drinks stay small — a note points to the right big-mug drink.
+   8 oz ≈ 240 ml, 10 oz ≈ 300 ml, one shot ≈ 35 ml, double ≈ 70 ml. */
+const SIZE_MILK = {
+  cappuccino:['1 shot + steamed milk & foam to fill ~8 oz (roughly ⅓ coffee · ⅓ milk · ⅓ foam).',
+              '2 shots (double) + more steamed milk & foam to fill ~10 oz.'],
+  latte:['1 shot + steamed milk to fill ~8 oz, thin foam on top.',
+         '2 shots (double) + steamed milk to fill ~10 oz.'],
+  'latte-macchiato':['Fill ~8 oz with milk & foam first, then pour 1 shot through.',
+                     'Fill ~10 oz with milk & foam first, then pour 2 shots through.'],
+  'flat-white':['2 shots + steamed milk to fill ~8 oz, thin foam (bigger than a classic flat white).',
+                '2 shots + steamed milk to fill ~10 oz — really a small latte at this size.'],
+  'cafe-au-lait':['1 extra-long coffee + hot milk to fill ~8 oz (about 1:1).',
+                  '1 extra-long coffee (or 2) + hot milk to fill ~10 oz.'],
+  breve:['1 shot + steamed half-and-half to fill ~8 oz.',
+         '2 shots + steamed half-and-half to fill ~10 oz.'],
+  'cafe-con-leche':['1–2 shots + hot milk to fill ~8 oz; sugar to taste.',
+                    '2 shots + hot milk to fill ~10 oz; sugar to taste.'],
+  galao:['1 shot + steamed milk to fill ~8 oz (about 1:3).',
+         '2 shots + steamed milk to fill ~10 oz.'],
+  'wiener-melange':['1 shot + steamed milk to fill ~8 oz, foam cap.',
+                    '2 shots + steamed milk to fill ~10 oz, foam cap.'],
+  mocha:['Chocolate paste + 1 shot + steamed milk to fill ~8 oz.',
+         'Chocolate paste + 2 shots + steamed milk to fill ~10 oz.'],
+  'hot-chocolate':['Cocoa paste + frothed milk to fill ~8 oz (no coffee).',
+                   'Cocoa paste + frothed milk to fill ~10 oz (no coffee).'],
+  'iced-latte':['1–2 shots over ice + cold milk to fill ~8 oz.',
+                '2 shots over ice + cold milk to fill ~10 oz.'],
+  'iced-cappuccino':['1 shot + cold milk & foam over ice to ~8 oz.',
+                     '2 shots + cold milk & foam over ice to ~10 oz.'],
+  'freddo-cappuccino':['Double espresso, shaken, + cold foam over ice to ~8 oz.',
+                       'Double espresso, shaken, + more cold foam over ice to ~10 oz.'],
+};
+const SIZE_WATER = {
+  lungo:['2 shots + hot water to fill ~8 oz.','2–3 shots + hot water to fill ~10 oz.'],
+  americano:['1–2 shots + hot water to fill ~8 oz.','2 shots + hot water to fill ~10 oz.'],
+  redeye:['1 long coffee + 1 shot, then hot water to ~8 oz.','1 extra-long coffee + 1 shot to ~10 oz.'],
+  'iced-americano':['1–2 shots + cold water over ice to ~8 oz.','2 shots + cold water over ice to ~10 oz.'],
+  'espresso-tonic':['1 shot + tonic water over ice to ~8 oz.','2 shots + tonic water over ice to ~10 oz.'],
+};
+const SIZE_NOTE = {
+  espresso:'An espresso is 1–1.5 oz. For an 8–10 oz mug, make an <b>Americano</b>.',
+  doppio:'A doppio is ~2–3 oz. For a big mug, make an <b>Americano</b> or a <b>latte</b>.',
+  ristretto:'A ristretto is ~1 oz. For a big mug, make an <b>Americano</b>.',
+  'con-panna':'Espresso + cream, small. For a big mug, make a <b>latte</b> or <b>mocha</b>.',
+  vienna:'Small and cream-topped. For a big mug, make a <b>café au lait</b> with cream.',
+  bombon:'Small and layered. For a big mug, make a <b>café con leche</b>.',
+  cubano:'A small strong shot. For a big mug, make a <b>café con leche</b>.',
+  'espresso-macchiato':'Made small. For an 8–10 oz mug, make a <b>latte</b>.',
+  cortado:'A cortado is ~4 oz. For an 8–10 oz mug, make a <b>latte</b>.',
+  cortadito:'Small and sweet. For a big mug, make a <b>latte</b> and add sugar.',
+  marocchino:'Made small. For a big mug, make a <b>mocha</b>.',
+  affogato:'A dessert — one scoop, one shot. Not sized by mug.',
+  'freddo-espresso':'A short cold shot. For a big cup, make a <b>Freddo cappuccino</b>.',
+};
+RECIPES.forEach(r=>{
+  if(SIZE_MILK[r.id])       r.sizes={mode:'milk',  s8:SIZE_MILK[r.id][0],  s10:SIZE_MILK[r.id][1]};
+  else if(SIZE_WATER[r.id]) r.sizes={mode:'water', s8:SIZE_WATER[r.id][0], s10:SIZE_WATER[r.id][1]};
+  else if(SIZE_NOTE[r.id])  r.sizeNote=SIZE_NOTE[r.id];
+});

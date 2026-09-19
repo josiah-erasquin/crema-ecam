@@ -1,5 +1,5 @@
 /* Crema service worker — offline-first app shell + runtime font cache. */
-const VERSION = 'crema-v3';
+const VERSION = 'crema-v4';
 const CORE = [
   './',
   'index.html',
