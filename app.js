@@ -113,6 +113,50 @@ function sourceRow(src){
     +`<div class="m"><div class="t">${src.title}</div><div class="u">${short}</div></div><span class="arr">${ARR}</span>`;
   return a;
 }
+function sizeSteps(p,size){
+  const t=size==='s8'?'~8 oz':'~10 oz';
+  const shot=size==='s8'?p.shot8:p.shot10;
+  const CLEAN='Turn the froth dial to <code>CLEAN</code> and run the auto-clean.';
+  const fitMilk=`Fit the milk carafe (not above <code>MAX</code>) and set the froth dial to <b>${p.froth}</b>.`;
+  const pressFill=`Press the <b>cappuccino</b> button <b>twice</b> for milk only, and add ${p.milk} until the mug is nearly full (${t}).`;
+  const topUp=`If the machine stops before the mug is full, press <b>cappuccino</b> twice again and keep adding ${p.milk} until it reaches ${t}.`;
+  switch(p.fam){
+    case 'milk':{
+      const a=[];
+      if(p.pre)a.push(p.pre);
+      a.push(`Make ${shot} in a large mug.`);
+      if(p.afterShot)a.push(p.afterShot);
+      a.push(fitMilk,pressFill,topUp);
+      if(p.tail)a.push(p.tail);
+      a.push(CLEAN);
+      return a;
+    }
+    case 'chocolate':
+      return [p.pre,fitMilk,pressFill,topUp,`Stir well. ${CLEAN}`];
+    case 'macchiato':
+      return [
+        `Fit the milk carafe and set the froth dial to <b>${p.froth}</b>.`,
+        `Press the <b>cappuccino</b> button <b>twice</b> for milk only and fill a ${t} glass with milk and foam. If it stops short, press twice again and add more.`,
+        `Make ${shot} and pour it slowly through the milk so it layers.`,
+        CLEAN];
+    case 'water':
+      return [
+        `Make ${shot} in the mug.`,
+        `Press the <b>hot water</b> button and top the mug up to ${t}${p.topIf?', if needed':''}. Stop at the line.`];
+    case 'iced-milk':
+      return [
+        `Fill a ${t} glass with ice.`,
+        `Make ${shot} and pour it over the ice.`,
+        `Fit the milk carafe, set the froth dial to <b>${p.froth}</b>, and press <b>cappuccino</b> twice for milk only. Top the glass with ${p.milk} to ${t}. If it stops short, press twice again and add more.`,
+        CLEAN];
+    case 'iced-water':
+      return [
+        `Fill a ${t} glass with ice.`,
+        `Make ${shot} and pour it over the ice.`,
+        `Add ${p.cold} to fill the glass to ${t}.`];
+    default:return [];
+  }
+}
 function renderDetail(item,kind){
   const host=$('#detail');host.innerHTML='';
   const wrap=el('div','detail');
@@ -125,32 +169,40 @@ function renderDetail(item,kind){
     +`<div class="cell"><div class="k">Milk</div><div class="v acc">${item.milk}</div></div></div>`);
   wrap.appendChild(nc);
 
-  if(kind==='r'&&(item.sizes||item.sizeNote)){
+  // steps (re-rendered when the mug size changes)
+  const stepsBlock=el('div','block','<h3>Steps</h3>');
+  const stepsHost=el('div');
+  stepsBlock.appendChild(stepsHost);
+  const paint=arr=>{stepsHost.innerHTML='';stepsHost.appendChild(stepsList(arr));};
+  paint(item.steps);
+
+  if(kind==='r'&&item.size){
     const sb=el('div','block','<h3>Mug size</h3>');
-    if(item.sizes){
-      const seg=el('div','seg');
-      const build=el('div','sizebuild');
-      const fill=item.sizes.mode==='water'?'Top up with the hot water function.':'Scale with more milk — do not add water.';
-      [['std','Standard'],['s8','8 oz'],['s10','10 oz']].forEach(([k,label])=>{
-        const b=el('button','seg-btn'+(k==='std'?' on':''),label);
-        b.setAttribute('aria-pressed',k==='std'?'true':'false');
-        b.onclick=()=>{
-          seg.querySelectorAll('.seg-btn').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});
-          b.classList.add('on');b.setAttribute('aria-pressed','true');
-          if(k==='std'){build.classList.remove('show');build.innerHTML='';}
-          else{build.innerHTML=`<div class="sizehead">${label} mug</div><p>${item.sizes[k]}</p><div class="sizefoot">${fill}</div>`;build.classList.add('show');}
-        };
-        seg.appendChild(b);
-      });
-      sb.appendChild(seg);sb.appendChild(build);
-    }else{
-      const n=el('div','callout');n.innerHTML=`<p>${item.sizeNote}</p>`;sb.appendChild(n);
-    }
+    const seg=el('div','seg');
+    const fillNote=el('div','sizefoot-note',
+      item.size.fam.indexOf('water')>-1
+        ? 'Scaled with the hot water function.'
+        : 'Scaled with more milk — never water.');
+    [['std','Standard'],['s8','8 oz'],['s10','10 oz']].forEach(([k,label])=>{
+      const b=el('button','seg-btn'+(k==='std'?' on':''),label);
+      b.setAttribute('aria-pressed',k==='std'?'true':'false');
+      b.onclick=()=>{
+        seg.querySelectorAll('.seg-btn').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});
+        b.classList.add('on');b.setAttribute('aria-pressed','true');
+        paint(k==='std'?item.steps:sizeSteps(item.size,k));
+        fillNote.style.display=k==='std'?'none':'block';
+      };
+      seg.appendChild(b);
+    });
+    fillNote.style.display='none';
+    sb.appendChild(seg);sb.appendChild(fillNote);
+    wrap.appendChild(sb);
+  }else if(kind==='r'&&item.sizeNote){
+    const sb=el('div','block','<h3>Mug size</h3>');
+    const n=el('div','callout');n.innerHTML=`<p>${item.sizeNote}</p>`;sb.appendChild(n);
     wrap.appendChild(sb);
   }
 
-  const stepsBlock=el('div','block','<h3>Steps</h3>');
-  stepsBlock.appendChild(stepsList(item.steps));
   wrap.appendChild(stepsBlock);
 
   if(item.tips&&item.tips.length){
