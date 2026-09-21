@@ -22,13 +22,27 @@ const PUSH=(window.CREMA_PUSH||{});
 const NTFY_TOPIC=(PUSH.ntfy||'').trim();
 const NTFY_URL=NTFY_TOPIC?('https://ntfy.sh/'+encodeURIComponent(NTFY_TOPIC)):'';
 
+const asciiFold=s=>s.normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^\x20-\x7E]/g,'').trim();
+const recipeBase=()=>location.origin+location.pathname.replace(/[^/]*$/,'');
 async function sendOrder(){
   if(!ORDER.length)return;
   const text=orderText();
   if(NTFY_URL){
+    // ONE readable line as the message (no newlines -> never a .txt attachment).
+    // Header values must be ASCII: name goes in the body, action labels are ascii-folded.
+    const who=ORDER_NAME.trim();
+    const line=(who?who+': ':'')+ORDER.map(o=>`${o.name} (${o.size})${o.note?', '+o.note:''}`).join('; ');
+    const base=recipeBase();
+    const seen=new Set(), acts=[];
+    for(const o of ORDER){
+      if(seen.has(o.id))continue; seen.add(o.id);
+      acts.push(`view, ${asciiFold('Make '+o.name)}, ${base}#r/${o.id}`);
+      if(acts.length===3)break; // ntfy allows up to 3 action buttons
+    }
+    const headers={'Title':'New coffee order','Tags':'coffee','Priority':'high','Click':base+'#r/'+ORDER[0].id};
+    if(acts.length) headers['Actions']=acts.join('; ');
     try{
-      // Header values must be ASCII, so the name lives in the body (text), not the Title.
-      const r=await fetch(NTFY_URL,{method:'POST',headers:{'Title':'New coffee order','Tags':'coffee','Priority':'high'},body:text});
+      const r=await fetch(NTFY_URL,{method:'POST',headers,body:line});
       if(r.ok){toast('Order sent ✓');ORDER=[];saveOrder();updateBadge();renderOrder();return;}
     }catch(e){/* fall back to share/copy below */}
   }
