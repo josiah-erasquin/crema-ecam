@@ -240,6 +240,9 @@ ol.steps li code{font-family:var(--mono);font-size:13.5px;background:var(--panel
 .line .rm{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--ink-soft);border:1.5px solid var(--line-soft)}
 .line .rm:active{background:var(--panel)}
 .orderbar{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.alerts{margin:2px 0 20px}
+.alerts .note{margin:9px 2px 0}
+.btn:disabled{opacity:.6;cursor:default}
 
 /* ---------- bottom nav ---------- */
 nav{
@@ -364,6 +367,7 @@ body[data-view="order"] #view-order{display:block}
   </div>
 </div>
 
+<script src="push-config.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 <script>
