@@ -7,7 +7,7 @@ const byId=(arr,id)=>arr.find(x=>x.id===id);
 const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---- order tray (per-device, persisted) ---- */
-let ORDER=[], ORDER_NAME='';
+let ORDER=[], ORDER_NAME='', orderOpen=null;
 try{ORDER=JSON.parse(localStorage.getItem('crema-order')||'[]');}catch(e){ORDER=[];}
 try{ORDER_NAME=localStorage.getItem('crema-order-name')||'';}catch(e){}
 function saveOrder(){try{localStorage.setItem('crema-order',JSON.stringify(ORDER));localStorage.setItem('crema-order-name',ORDER_NAME);}catch(e){}}
@@ -289,14 +289,7 @@ function rowList(items,kind,host){
 }
 
 /* ---- order tab ---- */
-function renderOrder(){
-  const host=$('#order-body');host.innerHTML='';
-  if(!ORDER.length){
-    host.appendChild(el('div','empty',
-      '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'
-      +'<b>No drinks yet</b>Open a recipe and tap “Add to order”.'));
-    return;
-  }
+function orderSummary(host){
   host.appendChild(el('div','sec',`<h2>Your order</h2><span class="rule"></span><span class="count">${ORDER.length}</span>`));
   const nameIn=el('input','namefield');nameIn.type='text';nameIn.placeholder='Who’s ordering? (name)';nameIn.value=ORDER_NAME;nameIn.setAttribute('aria-label','Your name');
   nameIn.oninput=()=>{ORDER_NAME=nameIn.value;saveOrder();};
@@ -316,12 +309,52 @@ function renderOrder(){
   send.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-7 16-2.5-6.5z"/></svg> Send order';
   send.onclick=sendOrder;
   const clear=el('button','btn btn-ghost','Clear order');
-  clear.onclick=()=>{ORDER=[];saveOrder();updateBadge();renderOrder();};
+  clear.onclick=()=>{ORDER=[];orderOpen=null;saveOrder();updateBadge();renderOrder();};
   bar.appendChild(send);bar.appendChild(clear);
   host.appendChild(bar);
   host.appendChild(el('div','note', NTFY_URL
     ? 'Sending delivers your order to the barista and pings their phone.'
     : 'Sending opens your phone’s share sheet — pick a chat or email to send this order.'));
+}
+function menuRow(r){
+  const open=orderOpen===r.id;
+  const row=el('div','mrow'+(open?' open':''));
+  const head=el('button','mrow-head');
+  head.innerHTML=`<div class="m"><div class="t">${r.name}${r.orig?` <span class="og">${r.orig}</span>`:''}</div><div class="d">${r.menu}</div></div><span class="add">${open?'Close':'Add'}</span>`;
+  head.onclick=()=>{orderOpen=open?null:r.id;renderOrder();};
+  row.appendChild(head);
+  if(open){
+    const panel=el('div','mrow-panel');
+    let chosen='Standard';
+    if(r.size){
+      panel.appendChild(el('div','lbl','Mug size'));
+      const chips=el('div','szchips');
+      ['Standard','8 oz','10 oz'].forEach(label=>{
+        const c=el('button','szchip'+(label==='Standard'?' on':''),label);
+        c.onclick=()=>{chips.querySelectorAll('.szchip').forEach(x=>x.classList.remove('on'));c.classList.add('on');chosen=label;};
+        chips.appendChild(c);
+      });
+      panel.appendChild(chips);
+    }
+    const note=el('textarea','note-in');note.rows=2;note.placeholder='Notes — milk type, sugar, extra hot…';
+    panel.appendChild(note);
+    const add=el('button','btn btn-accent');add.style.marginTop='11px';
+    add.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add to order';
+    add.onclick=()=>{ORDER.push({id:r.id,name:r.name,size:chosen,note:note.value.trim()});saveOrder();updateBadge();orderOpen=null;renderOrder();toast('Added to your order');};
+    panel.appendChild(add);
+    row.appendChild(panel);
+  }
+  return row;
+}
+function renderOrder(){
+  const host=$('#order-body');host.innerHTML='';
+  if(ORDER.length) orderSummary(host);
+  host.appendChild(el('div','sec',`<h2>Menu</h2><span class="rule"></span><span class="count">${RECIPES.length}</span>`));
+  host.appendChild(el('div','note','Tap a drink to choose the size, add a note, and put it in your order.'));
+  ['milk','black','iced'].forEach(c=>{
+    host.appendChild(el('div','subsec',CATLABEL[c]));
+    RECIPES.filter(r=>r.cats.includes(c)).forEach(r=>host.appendChild(menuRow(r)));
+  });
 }
 
 /* ---- routing ---- */

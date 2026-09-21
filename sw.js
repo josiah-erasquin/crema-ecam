@@ -1,5 +1,5 @@
-/* Crema service worker — offline-first app shell + runtime font cache. */
-const VERSION = 'crema-v8';
+/* Crema service worker — network-first for app files (fresh when online), cache as offline fallback. */
+const VERSION = 'crema-v11';
 const CORE = [
   './',
   'index.html',
@@ -28,14 +28,14 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
 
-  // App shell + same-origin: cache-first, fall back to network and cache it.
+  // App shell + same-origin: network-first, bypassing the HTTP cache so updates are never stale.
   if (sameOrigin) {
     e.respondWith(
-      caches.match(req).then(hit => hit || fetch(req).then(res => {
+      fetch(req.url, { cache: 'no-store' }).then(res => {
         const copy = res.clone();
         caches.open(VERSION).then(c => c.put(req, copy)).catch(() => {});
         return res;
-      }).catch(() => caches.match('index.html')))
+      }).catch(() => caches.match(req).then(hit => hit || caches.match('index.html')))
     );
     return;
   }

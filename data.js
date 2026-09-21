@@ -453,7 +453,43 @@ const SIZE_NOTE = {
   affogato:'A dessert — one scoop, one shot. Not sized by mug.',
   'freddo-espresso':'A short cold shot. For a big cup, make a <b>Freddo cappuccino</b>.',
 };
+/* Customer-facing one-liners for the order menu (what the drinker gets, not how it's made). */
+const MENU = {
+  espresso:'A small, intense shot. Bold and quick.',
+  doppio:'A double shot. Twice the kick.',
+  lungo:'A longer black coffee. Milder than espresso.',
+  americano:'Espresso topped with hot water. Clean and easy.',
+  ristretto:'A tiny, extra-concentrated shot. Sweet and punchy.',
+  'con-panna':'Espresso topped with whipped cream. A little treat.',
+  vienna:'Black coffee under a cap of whipped cream.',
+  bombon:'Espresso over sweet condensed milk. Rich and sweet.',
+  redeye:'Coffee with an extra shot. Maximum caffeine.',
+  cubano:'A strong, sweet shot with a sugar-whipped top.',
+  cappuccino:'Espresso, steamed milk, and a thick foam cap.',
+  latte:'Smooth and milky, with a mild coffee taste.',
+  'latte-macchiato':'Layered milk and espresso in a tall glass.',
+  'flat-white':'Strong and silky — more coffee, less foam than a latte.',
+  'espresso-macchiato':'An espresso with just a dab of foam.',
+  cortado:'Equal espresso and milk. Small and balanced.',
+  'cafe-au-lait':'Mellow coffee with plenty of warm milk.',
+  breve:'A rich, creamy latte made with half-and-half.',
+  'cafe-con-leche':'Strong coffee with lots of hot milk. Lightly sweet.',
+  galao:'Very milky and light, in a tall glass.',
+  cortadito:'A small, sweet, milky espresso.',
+  'wiener-melange':'Like a cappuccino — espresso, milk, and foam.',
+  mocha:'Chocolate and espresso with steamed milk.',
+  marocchino:'A little espresso, cocoa, and milk foam.',
+  'hot-chocolate':'Rich cocoa with frothed milk. No coffee.',
+  'iced-americano':'Espresso over ice and cold water. Crisp.',
+  'iced-latte':'Espresso and cold milk over ice.',
+  affogato:"Vanilla ice cream 'drowned' in a hot shot. A dessert.",
+  'iced-cappuccino':'A cappuccino served over ice.',
+  'freddo-espresso':'A cold, frothy shaken espresso. No milk.',
+  'freddo-cappuccino':'Iced espresso topped with cold milk foam.',
+  'espresso-tonic':'Espresso over tonic and ice. Fizzy and bright.',
+};
 RECIPES.forEach(r=>{
   if(SIZE[r.id])           r.size=SIZE[r.id];
   else if(SIZE_NOTE[r.id]) r.sizeNote=SIZE_NOTE[r.id];
+  r.menu = MENU[r.id] || r.desc;
 });
