@@ -207,6 +207,40 @@ ol.steps li code{font-family:var(--mono);font-size:13.5px;background:var(--panel
 .note{font-size:13px;color:var(--ink-soft);margin:18px 2px 0;line-height:1.5}
 .note b{color:var(--ink)}
 
+/* tab badge */
+.tab-badge{position:absolute;top:7px;left:calc(50% + 7px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:var(--accent);color:var(--ink);font-family:var(--mono);font-size:11px;font-weight:700;display:grid;place-items:center;line-height:1}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:52px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:.01em;transition:transform .12s}
+.btn:active{transform:scale(.99)}
+.btn svg{flex:0 0 auto}
+.btn-primary{background:var(--ink);color:var(--on-ink)}
+.btn-accent{background:var(--accent);color:var(--ink)}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+
+/* add to order (recipe detail) */
+.note-in{width:100%;min-height:46px;border:1.5px solid var(--line);border-radius:11px;background:#FBF8F1;padding:11px 13px;font:inherit;color:var(--ink);resize:vertical;caret-color:var(--accent-ink)}
+.note-in:focus{border-color:var(--accent-ink);outline:none;background:#fff}
+.note-in::placeholder{color:var(--ink-soft)}
+.addorder .btn{margin-top:11px}
+.added{margin-top:10px;font-family:var(--mono);font-size:12.5px;color:var(--good);display:none;align-items:center;gap:6px}
+.added.show{display:flex}
+
+/* order tab */
+.namefield{width:100%;height:48px;border:1.5px solid var(--line);border-radius:12px;background:#FBF8F1;padding:0 14px;font:inherit;color:var(--ink);caret-color:var(--accent-ink)}
+.namefield:focus{border-color:var(--accent-ink);outline:none;background:#fff}
+.namefield::placeholder{color:var(--ink-soft)}
+.tray{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.line{display:flex;gap:12px;align-items:flex-start;background:#FBF8F1;border:1.5px solid var(--line-soft);border-radius:12px;padding:13px 14px}
+.line .m{min-width:0;flex:1}
+.line .t{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.line .s{font-family:var(--mono);font-size:12px;color:var(--accent-ink);margin-top:3px}
+.line .n{font-size:13.5px;color:var(--ink-soft);margin-top:4px;line-height:1.4}
+.line .rm{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--ink-soft);border:1.5px solid var(--line-soft)}
+.line .rm:active{background:var(--panel)}
+.orderbar{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+
 /* ---------- bottom nav ---------- */
 nav{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
@@ -228,6 +262,7 @@ body[data-view="recipes"] #view-recipes{display:block}
 body[data-view="detail"] #view-detail{display:block}
 body[data-view="guide"] #view-guide{display:block}
 body[data-view="care"] #view-care{display:block}
+body[data-view="order"] #view-order{display:block}
 
 /* entrance: settle from an already-visible default */
 @media (prefers-reduced-motion:no-preference){
@@ -241,6 +276,8 @@ body[data-view="care"] #view-care{display:block}
   .detail{animation:slideup .34s cubic-bezier(.2,.7,.2,1) both}
   @keyframes slideup{from{opacity:.001;transform:translateY(14px)}to{opacity:1;transform:none}}
 }
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 18px);transform:translate(-50%,10px);max-width:calc(var(--maxw) - 48px);background:var(--ink);color:var(--on-ink);padding:11px 16px;border-radius:11px;font-size:13.5px;line-height:1.35;box-shadow:var(--shadow);opacity:0;transition:opacity .25s,transform .25s;z-index:60;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
 .install{position:fixed;left:16px;right:16px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px);
   max-width:calc(var(--maxw) - 32px);margin:0 auto;z-index:50;background:var(--ink);color:var(--on-ink);
   border-radius:14px;padding:13px 14px;display:none;align-items:center;gap:12px;box-shadow:var(--shadow)}
@@ -290,6 +327,12 @@ body[data-view="care"] #view-care{display:block}
       <div class="pad-top"></div>
       <div id="care-body"></div>
     </section>
+
+    <!-- ORDER -->
+    <section class="view" id="view-order">
+      <div class="pad-top"></div>
+      <div id="order-body"></div>
+    </section>
   </main>
 
   <nav>
@@ -304,6 +347,11 @@ body[data-view="care"] #view-care{display:block}
     <button data-tab="care" onclick="go('#care')">
       <svg class="g" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s5 3 5 8a5 5 0 0 1-10 0c0-2 1-3.5 2-5"/><path d="M9.5 20.5h5"/></svg>
       Care
+    </button>
+    <button data-tab="order" onclick="go('#order')">
+      <svg class="g" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      Order
+      <span class="tab-badge" id="order-badge" hidden></span>
     </button>
   </nav>
 

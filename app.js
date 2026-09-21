@@ -5,6 +5,29 @@ const $=s=>document.querySelector(s);
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 const byId=(arr,id)=>arr.find(x=>x.id===id);
 const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---- order tray (per-device, persisted) ---- */
+let ORDER=[], ORDER_NAME='';
+try{ORDER=JSON.parse(localStorage.getItem('crema-order')||'[]');}catch(e){ORDER=[];}
+try{ORDER_NAME=localStorage.getItem('crema-order-name')||'';}catch(e){}
+function saveOrder(){try{localStorage.setItem('crema-order',JSON.stringify(ORDER));localStorage.setItem('crema-order-name',ORDER_NAME);}catch(e){}}
+function updateBadge(){const b=document.getElementById('order-badge');if(!b)return;if(ORDER.length){b.hidden=false;b.textContent=ORDER.length;}else{b.hidden=true;b.textContent='';}}
+function toast(msg){const t=el('div','toast',msg);document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},2400);}
+function orderText(){
+  const who=ORDER_NAME.trim();
+  const lines=ORDER.map(o=>`• ${o.name} (${o.size})${o.note?` — ${o.note}`:''}`);
+  return `Coffee order${who?` for ${who}`:''}:\n`+lines.join('\n');
+}
+async function sendOrder(){
+  if(!ORDER.length)return;
+  const text=orderText();
+  if(navigator.share){
+    try{await navigator.share({title:'Coffee order',text});return;}
+    catch(e){if(e&&e.name==='AbortError')return;}
+  }
+  try{await navigator.clipboard.writeText(text);toast('Order copied — paste it to send.');}
+  catch(e){window.prompt('Copy your order:',text);}
+}
 const CATLABEL={milk:'Milk drinks',black:'Black',iced:'Iced'};
 
 /* ---- line icons (one stroke weight) ---- */
@@ -160,6 +183,7 @@ function sizeSteps(p,size){
 function renderDetail(item,kind){
   const host=$('#detail');host.innerHTML='';
   const wrap=el('div','detail');
+  let selSize='Standard';
   const desc = (kind==='r'&&item.orig) ? `<b>${item.orig}.</b> ${item.desc}` : item.desc;
   const nc=el('div','namecard');
   nc.innerHTML=`<h1>${item.name||item.title}</h1><p>${desc}</p>`;
@@ -189,6 +213,7 @@ function renderDetail(item,kind){
       b.onclick=()=>{
         seg.querySelectorAll('.seg-btn').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});
         b.classList.add('on');b.setAttribute('aria-pressed','true');
+        selSize=label;
         paint(k==='std'?item.steps:sizeSteps(item.size,k));
         fillNote.style.display=k==='std'?'none':'block';
       };
@@ -215,6 +240,21 @@ function renderDetail(item,kind){
     sb.appendChild(sourceRow(item.source));
     wrap.appendChild(sb);
   }
+  if(kind==='r'){
+    const ob=el('div','block addorder','<h3>Order this</h3>');
+    const note=el('textarea','note-in');note.rows=2;note.placeholder='Notes — milk type, sugar, decaf, extra hot…';
+    const btn=el('button','btn btn-accent');
+    btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add to order';
+    const ok=el('div','added');
+    ok.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg> Added to your order';
+    btn.onclick=()=>{
+      ORDER.push({id:item.id,name:item.name,size:selSize,note:note.value.trim()});
+      saveOrder();updateBadge();note.value='';
+      ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2400);
+    };
+    ob.appendChild(note);ob.appendChild(btn);ob.appendChild(ok);
+    wrap.appendChild(ob);
+  }
   host.appendChild(wrap);
   $('#crumb').textContent=item.name||item.title;
 }
@@ -235,6 +275,40 @@ function rowList(items,kind,host){
   sec.appendChild(deck);
   host.appendChild(sec);
   if(kind==='g')host.appendChild(el('div','note','<b>Official</b> steps come from the De’Longhi how-to videos. <b>Tips</b> are barista opinion — a place to start, then taste.'));
+}
+
+/* ---- order tab ---- */
+function renderOrder(){
+  const host=$('#order-body');host.innerHTML='';
+  if(!ORDER.length){
+    host.appendChild(el('div','empty',
+      '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'
+      +'<b>No drinks yet</b>Open a recipe and tap “Add to order”.'));
+    return;
+  }
+  host.appendChild(el('div','sec',`<h2>Your order</h2><span class="rule"></span><span class="count">${ORDER.length}</span>`));
+  const nameIn=el('input','namefield');nameIn.type='text';nameIn.placeholder='Who’s ordering? (name)';nameIn.value=ORDER_NAME;nameIn.setAttribute('aria-label','Your name');
+  nameIn.oninput=()=>{ORDER_NAME=nameIn.value;saveOrder();};
+  host.appendChild(nameIn);
+  const tray=el('div','tray');
+  ORDER.forEach((o,i)=>{
+    const line=el('div','line');
+    line.innerHTML=`<div class="m"><div class="t">${o.name}</div><div class="s">${o.size}</div>${o.note?`<div class="n">${esc(o.note)}</div>`:''}</div>`;
+    const rm=el('button','rm');rm.setAttribute('aria-label',`Remove ${o.name}`);
+    rm.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    rm.onclick=()=>{ORDER.splice(i,1);saveOrder();updateBadge();renderOrder();};
+    line.appendChild(rm);tray.appendChild(line);
+  });
+  host.appendChild(tray);
+  const bar=el('div','orderbar');
+  const send=el('button','btn btn-primary');
+  send.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-7 16-2.5-6.5z"/></svg> Send order';
+  send.onclick=sendOrder;
+  const clear=el('button','btn btn-ghost','Clear order');
+  clear.onclick=()=>{ORDER=[];saveOrder();updateBadge();renderOrder();};
+  bar.appendChild(send);bar.appendChild(clear);
+  host.appendChild(bar);
+  host.appendChild(el('div','note','Sending opens your phone’s share sheet — pick a chat or email to send this order.'));
 }
 
 /* ---- routing ---- */
@@ -261,6 +335,7 @@ function route(){
     const v=h.replace('#','')||'recipes';
     if(v==='guide'){rowList(GUIDE,'g',$('#guide-body'));document.body.dataset.view='guide';setTab('guide');}
     else if(v==='care'){rowList(CARE,'c',$('#care-body'));document.body.dataset.view='care';setTab('care');}
+    else if(v==='order'){renderOrder();document.body.dataset.view='order';setTab('order');}
     else{document.body.dataset.view='recipes';setTab('recipes');}
     lastList=document.body.dataset.view;
   }
@@ -290,5 +365,5 @@ $('#install-x').onclick=()=>{$('#install').classList.remove('show');try{sessionS
 window.addEventListener('appinstalled',()=>$('#install').classList.remove('show'));
 
 /* ---- boot ---- */
-renderChips();renderRecipes();route();
+renderChips();renderRecipes();updateBadge();route();
 })();
