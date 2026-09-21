@@ -1,6 +1,7 @@
-/* Push config — filled in after you deploy the order Worker (order-worker/setup.sh writes this).
-   While api is empty, ordering falls back to the share sheet and the alerts button is hidden. */
+/* Order delivery config.
+   ntfy = your private ntfy.sh topic. Orders are sent there; you receive them in the ntfy app.
+   Keep this topic private — anyone who knows it can post to and read it.
+   Empty ntfy = the app falls back to the phone share sheet. */
 self.CREMA_PUSH = {
-  api: "",          // e.g. "https://crema-orders.<you>.workers.dev"
-  vapidPublic: ""   // the VAPID public key printed by setup.sh
+  ntfy: "crema-orders-7dc46ff576eced6059"
 };

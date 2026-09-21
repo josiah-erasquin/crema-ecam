@@ -19,17 +19,16 @@ function orderText(){
   return `Coffee order${who?` for ${who}`:''}:\n`+lines.join('\n');
 }
 const PUSH=(window.CREMA_PUSH||{});
-const ORDER_API=(PUSH.api||'').replace(/\/$/,'');
-const VAPID_PUBLIC=PUSH.vapidPublic||'';
-const alertsSupported=()=>!!(ORDER_API&&VAPID_PUBLIC&&'Notification'in window&&'serviceWorker'in navigator&&'PushManager'in window);
+const NTFY_TOPIC=(PUSH.ntfy||'').trim();
+const NTFY_URL=NTFY_TOPIC?('https://ntfy.sh/'+encodeURIComponent(NTFY_TOPIC)):'';
 
 async function sendOrder(){
   if(!ORDER.length)return;
   const text=orderText();
-  if(ORDER_API){
+  if(NTFY_URL){
     try{
-      const r=await fetch(ORDER_API+'/order',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name:ORDER_NAME.trim(),items:ORDER.map(o=>({name:o.name,size:o.size,note:o.note})),text})});
+      // Header values must be ASCII, so the name lives in the body (text), not the Title.
+      const r=await fetch(NTFY_URL,{method:'POST',headers:{'Title':'New coffee order','Tags':'coffee','Priority':'high'},body:text});
       if(r.ok){toast('Order sent ✓');ORDER=[];saveOrder();updateBadge();renderOrder();return;}
     }catch(e){/* fall back to share/copy below */}
   }
@@ -39,20 +38,6 @@ async function sendOrder(){
   }
   try{await navigator.clipboard.writeText(text);toast('Order copied — paste it to send.');}
   catch(e){window.prompt('Copy your order:',text);}
-}
-
-function urlB64ToU8(s){const pad='='.repeat((4-s.length%4)%4);const b=(s+pad).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(b);const u=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)u[i]=raw.charCodeAt(i);return u;}
-async function enableAlerts(btn){
-  if(!alertsSupported()){toast('Order alerts are not set up yet.');return;}
-  try{
-    const perm=await Notification.requestPermission();
-    if(perm!=='granted'){toast('Notifications are blocked — allow them in settings.');return;}
-    const reg=await navigator.serviceWorker.ready;
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64ToU8(VAPID_PUBLIC)});
-    const r=await fetch(ORDER_API+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});
-    if(r.ok){try{localStorage.setItem('crema-barista','1');}catch(e){}toast('Order alerts are on for this phone.');if(btn){btn.textContent='Alerts on for this phone ✓';btn.disabled=true;}}
-    else toast('Could not turn on alerts.');
-  }catch(e){toast('Could not turn on alerts.');}
 }
 const CATLABEL={milk:'Milk drinks',black:'Black',iced:'Iced'};
 
@@ -306,16 +291,6 @@ function rowList(items,kind,host){
 /* ---- order tab ---- */
 function renderOrder(){
   const host=$('#order-body');host.innerHTML='';
-  if(alertsSupported()){
-    let done=false;try{done=localStorage.getItem('crema-barista')==='1';}catch(e){}
-    const row=el('div','alerts');
-    const btn=el('button','btn btn-ghost');
-    btn.textContent=done?'Alerts on for this phone ✓':'Get order alerts on this phone';
-    if(done)btn.disabled=true;else btn.onclick=()=>enableAlerts(btn);
-    row.appendChild(btn);
-    row.appendChild(el('div','note','Turn this on once, on your own phone, to be notified when an order comes in.'));
-    host.appendChild(row);
-  }
   if(!ORDER.length){
     host.appendChild(el('div','empty',
       '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'
@@ -344,8 +319,8 @@ function renderOrder(){
   clear.onclick=()=>{ORDER=[];saveOrder();updateBadge();renderOrder();};
   bar.appendChild(send);bar.appendChild(clear);
   host.appendChild(bar);
-  host.appendChild(el('div','note', ORDER_API
-    ? 'Sending delivers your order to the barista and notifies them.'
+  host.appendChild(el('div','note', NTFY_URL
+    ? 'Sending delivers your order to the barista and pings their phone.'
     : 'Sending opens your phone’s share sheet — pick a chat or email to send this order.'));
 }
 
