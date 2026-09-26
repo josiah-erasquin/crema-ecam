@@ -8,261 +8,327 @@ const CATS = [
   {id:'iced',  label:'Iced'},
 ];
 
+/* Machine facts — official ECAM 23.460.S manual (sections 10–12).
+   Size dial (ml in cup): Short ≈40 · Standard ≈60 · Long ≈90 · Extra long ≈120 · My Coffee 20–180 (30 default).
+   Aroma button: 5 tastes. 2-cup = two portions; with one cup under both spouts you get double.
+   Cappuccino: 1 press = milk, then coffee. 2 presses = milk only (1 press stops it).
+   Hold cappuccino (or a coffee button) within 3 s after delivery = add more. Hot water ≈250 ml, press again to stop. */
+const ML    = {short:40, standard:60, long:90, xlong:120};
+const DIAL  = {short:'Short', standard:'Standard', long:'Long', xlong:'Extra long'};
+const TASTE = {xmild:'Extra-mild', mild:'Mild', std:'Standard', strong:'Strong', xstrong:'Extra-strong'};
+const TSHORT= {xmild:'X-mild', mild:'Mild', std:'Std', strong:'Strong', xstrong:'X-strong'};
+const FROTH = {hot:'<b>HOT MILK</b> (no froth)', min:'<b>Min</b> froth', lowmid:'between <b>Min</b> and the middle',
+               mid:'the middle (about 12 o’clock)', max:'<b>Max</b> froth'};
+const oz = ml => String(Math.round(ml/29.57*2)/2);   // nearest half ounce
+function brew(s,t,n){
+  n=n||1; const v=ML[s]*n;
+  return `Turn the size dial to <b>${DIAL[s]}</b>. Press the aroma button until <b>${TASTE[t]}</b> shows. `
+    + `Press <b>${n}-cup</b>${n===2?' (one cup under both spouts)':''}. You get ≈${v} ml (${oz(v)} oz) of coffee.`;
+}
+const spec  = (s,t,n) => `${DIAL[s]} · ${TSHORT[t]} · ${n||1}-cup`;
+const FIT   = f => `Fill the milk carafe (not above <code>MAX</code>), push it onto the nozzle until it beeps, and set the froth dial to ${FROTH[f]}.`;
+const MILK  = stop => `Press <b>cappuccino</b> twice for milk only. Press <b>cappuccino</b> once to stop ${stop}.`;
+const AROMA = t => `Press the aroma button until <b>${TASTE[t]}</b> shows. (The size dial does not change the cappuccino button — it uses its saved amounts.)`;
+const CAP1  = 'Press <b>cappuccino</b> once. The machine delivers the milk first, then the coffee.';
+const MORE  = {kind:'official', text:'To add more milk or coffee at the end, press and hold <b>cappuccino</b> within 3 seconds.'};
+const PROG  = {kind:'official', text:'Save your own cappuccino amounts: hold <b>cappuccino</b> until “PROGRAM MILK” shows, release, and press it at the milk level you want. The coffee starts — press again at the coffee level you want.'};
 const CLEAN_TIP = {kind:'official', text:'After the last milk drink, turn the froth dial to <code>CLEAN</code> and let the auto-clean run, then wipe the nozzle.'};
-const MILKONLY  = 'Press the <b>cappuccino</b> button <b>twice</b> for milk only (no coffee). Press again to stop.';
 
 const RECIPES = [
   /* ---------------- BLACK ---------------- */
   {id:'espresso', name:'Espresso', cats:['black'],
    desc:'A single strong shot with a golden crema.',
-   base:'Short · X-strong', froth:'—', milk:'—',
+   base:spec('short','xstrong'), froth:'—', milk:'—',
    steps:[
-     'Turn the dial to <b>Short coffee</b>.',
-     'Press the centre dial to set <b>extra-strong</b>.',
-     'Lower the spout close to the cup — this makes a creamier shot.',
-     'Press <b>1-cup</b>. Look for a golden crema.'],
+     'Put an espresso cup under the spouts. Lower the spouts close to the cup — this makes a creamier shot.',
+     brew('short','xstrong',1),
+     'Look for a golden crema.'],
    tips:[{kind:'tip', text:'For more crema, grind finer (dial <b>2–3</b>) and use beans roasted for espresso.'}],
    source:{title:'Coffee from beans — De’Longhi How-To', url:'https://www.youtube.com/watch?v=9sQiGxZAcIY'}},
 
   {id:'doppio', name:'Doppio (double)', cats:['black'],
    desc:'A double espresso — twice the coffee, same cup.',
-   base:'Short · X-strong', froth:'—', milk:'—',
-   steps:['Turn the dial to <b>Short coffee</b>, strength <b>extra-strong</b>.','Press <b>2-cup</b> into one cup.']},
+   base:spec('short','xstrong',2), froth:'—', milk:'—',
+   steps:['Put one espresso cup under both spouts.', brew('short','xstrong',2)]},
 
   {id:'lungo', name:'Lungo / Long black', cats:['black'],
    desc:'A longer, milder black coffee.',
-   base:'Long / X-long', froth:'—', milk:'—',
-   steps:['Turn the dial to <b>Long</b> or <b>Extra-long coffee</b>.','Press <b>1-cup</b>.'],
-   tips:[{kind:'tip', text:'For a bigger cup at the <b>same</b> strength, press single espresso twice instead of Long — the extra water through one puck tastes bitter.'}]},
+   base:spec('long','strong'), froth:'—', milk:'—',
+   steps:['Put a cup under the spouts.', brew('long','strong',1)],
+   tips:[{kind:'tip', text:'Want it longer? <b>Extra long</b> gives ≈120 ml (4 oz). For a bigger cup that is not bitter, use <b>2-cup</b> instead of stretching one puck.'}]},
 
   {id:'americano', name:'Americano', cats:['black'],
    desc:'Espresso loosened with hot water.',
-   base:'Short · Strong', froth:'—', milk:'—',
+   base:spec('short','xstrong')+' + water', froth:'—', milk:'—',
    steps:[
-     'Make an espresso: <b>Short</b>, <b>strong</b>, <b>1-cup</b>.',
-     'Press the <b>hot water</b> button to add hot water to taste.',
-     'Or fill the cup with hot water first, then pour the espresso on top for more crema.'],
-   tips:[{kind:'tip', text:'A common demo favourite. Use <b>2-cup</b> for a bigger, stronger americano.'}]},
+     'Put a mug under the spouts.',
+     brew('short','xstrong',1),
+     'Fit the hot water spout. Press <b>hot water</b>. Press it again to stop at ≈160 ml (5.5 oz) in the mug — about three parts water to one part coffee.'],
+   tips:[{kind:'official', text:'If you do not stop it, <b>hot water</b> gives ≈250 ml (8.5 oz).'},
+         {kind:'tip', text:'For more crema on top, run the hot water first, then brew the coffee onto it.'}]},
 
   {id:'ristretto', name:'Ristretto', cats:['black'],
    desc:'A very short, concentrated shot.',
-   base:'~15–20 ml', froth:'—', milk:'—',
+   base:'My Coffee · 20 ml · X-strong', froth:'—', milk:'—',
    steps:[
-     'Program a coffee button down to about <b>15–20 ml</b> (see How-to → Program cup volume).',
-     'Set strength <b>extra-strong</b>.',
-     'Press that button.'],
-   tips:[{kind:'tip', text:'Great as the strong base for a small milk drink.'}]},
+     'One time only: turn the size dial to <b>My Coffee</b>. Hold <b>1-cup</b> until “1 MY COFFEE Program quantity” shows, then release.',
+     'Press <b>1-cup</b> again when the cup holds ≈20 ml (0.5 oz). The machine saves it.',
+     'To make a ristretto: turn the size dial to <b>My Coffee</b>, press the aroma button until <b>Extra-strong</b> shows, then press <b>1-cup</b>.'],
+   tips:[{kind:'official', text:'My Coffee goes from ≈20 to ≈180 ml. Saving a ristretto replaces your old My Coffee.'}]},
 
   {id:'con-panna', name:'Espresso con panna', cats:['black'],
    desc:'Espresso crowned with whipped cream.',
-   base:'Short · Strong', froth:'—', milk:'Whipped cream',
-   steps:['Make one espresso: <b>Short</b>, <b>strong</b>, <b>1-cup</b>.','Top with a spoon of whipped cream.']},
+   base:spec('short','xstrong'), froth:'—', milk:'Whipped cream',
+   steps:['Put an espresso cup under the spouts.', brew('short','xstrong',1), 'Top with a spoon of whipped cream.']},
 
   {id:'vienna', name:'Vienna coffee', cats:['black'],
    desc:'Long coffee under a cap of whipped cream.',
-   base:'Extra-long', froth:'—', milk:'Whipped cream',
-   steps:['Make an <b>extra-long</b> coffee.','Top with whipped cream. Do not stir.']},
+   base:spec('xlong','strong'), froth:'—', milk:'Whipped cream',
+   steps:['Put a cup under the spouts.', brew('xlong','strong',1), 'Top with whipped cream. Do not stir.']},
 
   {id:'bombon', name:'Café bombón', cats:['black'],
    desc:'Espresso layered over condensed milk.',
-   base:'Short · Strong', froth:'—', milk:'Condensed',
-   steps:['Put sweetened <b>condensed milk</b> in a clear glass.','Make one espresso and pour it slowly on top so it layers.']},
+   base:spec('short','xstrong'), froth:'—', milk:'Condensed',
+   steps:[
+     'Put ≈40 ml (about 2 tbsp) sweetened <b>condensed milk</b> in a small clear glass.',
+     'Put the glass under the spouts. '+brew('short','xstrong',1),
+     'The coffee sits on top of the condensed milk in two layers. Stir before you drink.']},
 
   {id:'redeye', name:'Red eye', cats:['black'],
    desc:'Long coffee spiked with an extra shot.',
-   base:'X-long + shot', froth:'—', milk:'—',
-   steps:['Make one <b>extra-long</b> coffee.','Add one <b>espresso</b> shot on top for more caffeine.']},
+   base:'X-long + Short shot', froth:'—', milk:'—',
+   steps:[
+     'Put a mug under the spouts.',
+     brew('xlong','strong',1),
+     'Leave the mug in place. '+brew('short','xstrong',1),
+     'The mug holds ≈160 ml (5.5 oz).']},
 
   {id:'cubano', name:'Café Cubano', cats:['black'],
    desc:'Espresso whipped to a sweet foam (espuma).',
-   base:'Short · Strong', froth:'—', milk:'Sugar espuma',
+   base:spec('short','xstrong'), froth:'—', milk:'Sugar espuma',
    steps:[
-     'Start a strong espresso.',
-     'Whip 1–2 tsp <b>sugar</b> with the first few drops of the espresso into a pale foam.',
-     'Stir in the rest of the espresso.']},
+     'Put 1–2 tsp <b>sugar</b> in a small jug. Keep an espresso cup next to it.',
+     'Turn the size dial to <b>Short</b>. Press the aroma button until <b>Extra-strong</b> shows.',
+     'Put the jug under the spouts and press <b>1-cup</b>. After the first few drops (about 2 seconds), swap the espresso cup in for the rest of the shot.',
+     'Whip the sugar and drops into a pale foam. Spoon it onto the espresso.']},
 
   /* ---------------- MILK ---------------- */
   {id:'cappuccino', name:'Cappuccino', cats:['milk'],
    desc:'Equal parts espresso, milk, and a thick foam cap.',
-   base:'Short · Strong · 1-cup', froth:'High', milk:'Equal + foam',
+   base:'Cappuccino button · Strong', froth:'Max', milk:'Auto: milk → coffee',
    steps:[
-     'Fill the milk carafe (not above <code>MAX</code>) and push it onto the nozzle until it beeps.',
-     'Set the froth dial to <b>high</b>.',
-     'Put a cup under the spouts and press the <b>cappuccino</b> button. Milk comes first, then coffee.'],
-   tips:[CLEAN_TIP],
+     FIT('max'),
+     AROMA('strong'),
+     'Put a cup under the coffee spouts and the milk spout. Pull the milk spout down close to the cup.',
+     CAP1],
+   tips:[MORE, PROG, CLEAN_TIP],
    source:{title:'Cappuccino & milk drinks — De’Longhi How-To', url:'https://www.youtube.com/watch?v=JukCkpAPrdQ'}},
 
   {id:'latte', name:'Caffè latte', cats:['milk'],
    desc:'Espresso with a lot of milk and a thin foam.',
-   base:'Short · Strong · 1-cup', froth:'Low–med', milk:'Fill the cup',
+   base:spec('short','xstrong'), froth:'Min', milk:'Fill the glass',
    steps:[
-     'Make an espresso into a large cup: <b>Short</b>, <b>strong</b>, <b>1-cup</b>.',
-     'Fit the milk carafe, froth dial <b>low</b>.',
-     MILKONLY+' Fill the cup like a latte.'],
+     'Put a large glass under the spouts.',
+     brew('short','xstrong',1),
+     FIT('min'),
+     MILK('when the glass is about 1 cm below the rim')+' If the milk stops early, press twice again.'],
    tips:[CLEAN_TIP]},
 
   {id:'latte-macchiato', name:'Latte macchiato', cats:['milk'],
    desc:'Layered: milk first, espresso poured through.',
-   base:'Short · Strong (last)', froth:'Medium', milk:'Fill glass first',
+   base:'Cappuccino button · Strong', froth:'Max', milk:'Auto: milk → coffee',
    steps:[
-     'Fit the milk carafe, froth dial <b>medium</b>.',
-     MILKONLY+' Fill a tall glass with milk and foam.',
-     'Make an espresso (<b>Short</b>, <b>strong</b>, <b>1-cup</b>) and pour it slowly through the milk to layer.'],
-   tips:[CLEAN_TIP],
+     FIT('max'),
+     AROMA('strong'),
+     'Put a tall glass under the coffee spouts and the milk spout.',
+     CAP1+' The coffee runs down through the milk and makes the layers.'],
+   tips:[MORE, CLEAN_TIP],
    source:{title:'Latte macchiato & cleaning', url:'https://www.youtube.com/watch?v=MQabwi857PQ'}},
 
   {id:'flat-white', name:'Flat white', cats:['milk'],
    desc:'A strong double espresso under a thin, smooth milk.',
-   base:'Short · Strong · 2-cup', froth:'Low', milk:'Small, thin foam',
+   base:spec('short','xstrong',2), froth:'Min', milk:'≈80 ml, thin foam',
    steps:[
-     'Make a double espresso: <b>Short</b>, <b>strong</b>, <b>2-cup</b>.',
-     'Fit the milk carafe, froth dial <b>low</b>.',
-     MILKONLY+' Add a small amount of smooth milk.'],
+     'Put a 5–6 oz cup under both spouts.',
+     brew('short','xstrong',2),
+     FIT('min'),
+     MILK('when the cup holds ≈160 ml (5.5 oz) — about 1 cm below the rim')],
    tips:[{kind:'tip', text:'Keep the milk low — a flat white has less milk and foam than a latte.'}, CLEAN_TIP]},
 
   {id:'espresso-macchiato', name:'Espresso macchiato', cats:['milk'],
    desc:'Espresso “stained” with a little foam.',
-   base:'Short · Strong · 1-cup', froth:'High', milk:'A spoon of foam',
+   base:spec('short','xstrong'), froth:'Max', milk:'A spoon of foam',
    steps:[
-     'Make one espresso in a small cup.',
-     'Fit the milk carafe, froth dial <b>high</b>.',
-     MILKONLY+' Add just a small spoon of foam on top.'],
+     'Put an espresso cup under the spouts.',
+     brew('short','xstrong',1),
+     FIT('max'),
+     MILK('after about one spoon of foam lands on the coffee (1–2 seconds)')],
    tips:[CLEAN_TIP]},
 
   {id:'cortado', name:'Cortado', cats:['milk'],
    desc:'Espresso cut with an equal amount of flat milk.',
-   base:'Short · Strong · 1-cup', froth:'Lowest', milk:'Equal (~1:1)',
+   base:spec('short','xstrong'), froth:'Min', milk:'Equal (~1:1)',
    steps:[
-     'Make one espresso in a small glass.',
-     'Fit the milk carafe, froth dial <b>lowest</b>.',
-     MILKONLY+' Add milk equal to the espresso.'],
+     'Put a small (4 oz) glass under the spouts.',
+     brew('short','xstrong',1),
+     FIT('min'),
+     MILK('when the glass holds ≈80 ml (2.5 oz) — milk equal to the coffee')],
    tips:[{kind:'tip', text:'Smaller than a flat white, with almost no foam.'}, CLEAN_TIP]},
 
   {id:'cafe-au-lait', name:'Café au lait', cats:['milk'],
    desc:'Long, mild coffee with equal warm milk.',
-   base:'Extra-long · 1-cup', froth:'Lowest', milk:'Equal (~1:1)',
+   base:spec('xlong','std'), froth:'Hot milk', milk:'Equal (~1:1)',
    steps:[
-     'Turn the dial to <b>Extra-long coffee</b> (mild, not espresso), strength <b>standard</b>. Press <b>1-cup</b>.',
-     'Fit the milk carafe, froth dial <b>lowest</b>.',
-     MILKONLY+' Add milk equal to the coffee.'],
+     'Put a large cup or bowl under the spouts.',
+     brew('xlong','std',1),
+     FIT('hot'),
+     MILK('when the cup holds ≈240 ml (8 oz) — milk equal to the coffee')],
    tips:[{kind:'tip', text:'The one milk drink built on long coffee, not espresso.'}, CLEAN_TIP]},
 
   {id:'breve', name:'Breve', cats:['milk'],
    desc:'A latte made with half-and-half for a richer body.',
-   base:'Short · Strong · 2-cup', froth:'Low', milk:'Half-and-half',
+   base:spec('short','strong',2), froth:'Min', milk:'Half-and-half',
    steps:[
-     'Fill the carafe with <b>half-and-half</b> instead of milk.',
-     'Make a double espresso: <b>Short</b>, <b>strong</b>, <b>2-cup</b>.',
-     'Froth dial <b>low</b>. '+MILKONLY+' Fill the cup.'],
+     'Fill the carafe with <b>half-and-half</b> instead of milk (not above <code>MAX</code>). Push it on until it beeps. Set the froth dial to '+FROTH.min+'.',
+     'Put a large glass under both spouts.',
+     brew('short','strong',2),
+     MILK('when the glass is about 1 cm below the rim')+' If it stops early, press twice again.'],
    tips:[CLEAN_TIP]},
 
   {id:'cafe-con-leche', name:'Café con leche', cats:['milk'],
    desc:'Strong coffee with a lot of hot milk.',
-   base:'Short · Strong', froth:'Low', milk:'1:1 up to 1:3',
+   base:spec('short','xstrong'), froth:'Hot milk', milk:'~2 parts',
    steps:[
-     'Make a strong espresso.',
-     'Froth dial <b>low</b>. '+MILKONLY+' Add plenty of milk (equal, up to three times the coffee).',
-     'Add sugar to taste.'],
+     'Put a cup under the spouts.',
+     brew('short','xstrong',1),
+     FIT('hot'),
+     MILK('when the cup holds ≈120 ml (4 oz) — about two parts milk to one part coffee'),
+     'Add sugar to taste and stir.'],
    tips:[CLEAN_TIP]},
 
   {id:'galao', name:'Galão', orig:'Portuguese', cats:['milk'],
    desc:'A tall, very milky coffee — one shot to three milk.',
-   base:'Short · Strong', froth:'Low–med', milk:'~3 parts',
+   base:spec('short','strong'), froth:'Min–mid', milk:'~3 parts',
    steps:[
-     'Make one espresso in a tall glass.',
-     'Froth dial <b>low–medium</b>. '+MILKONLY+' Add about <b>3 parts milk</b> to the one shot.'],
+     'Put a tall glass under the spouts.',
+     brew('short','strong',1),
+     FIT('lowmid'),
+     MILK('when the glass holds ≈160 ml (5.5 oz) — three parts milk to one part coffee')],
    tips:[CLEAN_TIP]},
 
   {id:'cortadito', name:'Cortadito', orig:'Cuban', cats:['milk'],
    desc:'A cortado with sugar for a sweet foam.',
-   base:'Short · Strong · 1-cup', froth:'Low', milk:'Equal (~1:1)',
+   base:spec('short','xstrong'), froth:'Min', milk:'Equal (~1:1)',
    steps:[
-     'Make one espresso, stir in <b>sugar</b> to taste.',
-     'Froth dial <b>low</b>. '+MILKONLY+' Add milk equal to the espresso.'],
+     'Put 1–2 tsp <b>sugar</b> in a small glass and put it under the spouts.',
+     brew('short','xstrong',1)+' Stir.',
+     FIT('min'),
+     MILK('when the glass holds ≈80 ml (2.5 oz) — milk equal to the coffee')],
    tips:[CLEAN_TIP]},
 
   {id:'wiener-melange', name:'Wiener Melange', orig:'Viennese', cats:['milk'],
-   desc:'A lighter cappuccino — espresso, steamed milk, foam.',
-   base:'Short · Strong · 1-cup', froth:'Med–high', milk:'Equal + foam',
+   desc:'A lighter cappuccino — mild coffee, steamed milk, foam.',
+   base:spec('standard','mild'), froth:'Middle', milk:'Equal + foam',
    steps:[
-     'Make one espresso.',
-     'Froth dial <b>medium–high</b>. '+MILKONLY+' Add equal steamed milk, topped with foam.'],
+     'Put a cup under the spouts.',
+     brew('standard','mild',1),
+     FIT('mid'),
+     MILK('when the cup holds ≈140 ml (4.5 oz) — milk and a foam cap about equal to the coffee')],
    tips:[CLEAN_TIP]},
 
   {id:'mocha', name:'Mocha latte', cats:['milk'],
    desc:'A latte with chocolate stirred through.',
-   base:'Short · Strong · 1-cup', froth:'Low–med', milk:'Fill the cup',
+   base:'Cappuccino button · X-strong', froth:'Min', milk:'Auto: milk → coffee',
    steps:[
      'In the cup, mix 1–2 tsp <b>cocoa</b> (or chocolate syrup) + sugar + a splash of hot water into a paste.',
-     'Make an espresso and pour it on the chocolate. Stir.',
-     'Froth dial <b>low–medium</b>. '+MILKONLY+' Fill the cup like a latte.'],
-   tips:[CLEAN_TIP]},
+     FIT('min'),
+     AROMA('xstrong'),
+     'Put the cup under the coffee spouts and the milk spout. '+CAP1,
+     'Stir well.'],
+   tips:[MORE, CLEAN_TIP]},
 
   {id:'marocchino', name:'Marocchino', cats:['milk'],
    desc:'A small mocha-macchiato: espresso, cocoa, foam.',
-   base:'Short · Strong · 1-cup', froth:'High', milk:'A spoon of foam',
+   base:spec('short','xstrong'), froth:'Max', milk:'A spoon of foam',
    steps:[
-     'Dust <b>cocoa</b> in the cup, then pull one espresso.',
-     'Dust a little cocoa on top.',
-     'Froth dial <b>high</b>. '+MILKONLY+' Add a small spoon of foam.'],
+     'Dust <b>cocoa</b> into a small glass and put it under the spouts.',
+     brew('short','xstrong',1),
+     FIT('max'),
+     MILK('after a spoon of foam lands on top (1–2 seconds)'),
+     'Dust a little cocoa on top.'],
    tips:[CLEAN_TIP]},
 
   {id:'hot-chocolate', name:'Hot chocolate', cats:['milk'],
    desc:'Frothed milk over a cocoa paste — no coffee.',
-   base:'—', froth:'Med–high', milk:'Fill the cup',
+   base:'Milk only', froth:'Middle', milk:'Fill the cup',
    steps:[
-     'Mix <b>cocoa</b> + sugar + a little milk into a paste in the cup.',
-     'Froth dial <b>medium–high</b>. '+MILKONLY,
-     'Pour the frothed milk over the paste and stir.'],
+     'Mix <b>cocoa</b> + sugar + a little milk into a paste in the mug.',
+     FIT('mid'),
+     'Put the mug under the milk spout. '+MILK('when the mug is about 1 cm below the rim')+' If it stops early, press twice again.',
+     'Stir well.'],
    tips:[CLEAN_TIP]},
 
   /* ---------------- ICED ---------------- */
   {id:'iced-americano', name:'Iced americano', cats:['iced'],
-   desc:'Ice, cold water, and a shot on top.',
-   base:'Short · Strong', froth:'—', milk:'—',
-   steps:['Fill a glass with <b>ice</b>.','Add cold water.','Pour one <b>espresso</b> shot on top.']},
+   desc:'Ice, cold water, and a double shot on top.',
+   base:spec('short','xstrong',2), froth:'—', milk:'—',
+   steps:[
+     'Fill a glass with <b>ice</b> and put it under both spouts.',
+     brew('short','xstrong',2),
+     'Add cold water to about 1 cm below the rim.']},
 
   {id:'iced-latte', name:'Iced latte', cats:['iced'],
    desc:'Espresso over ice with cold milk.',
-   base:'Short · Strong', froth:'—', milk:'Cold, poured',
+   base:spec('short','xstrong',2), froth:'—', milk:'Cold, poured',
    steps:[
-     'Fill a glass with <b>ice</b>.',
-     'Make one or two espresso shots and pour over the ice.',
-     'Top with cold milk.'],
+     'Fill a glass with <b>ice</b> and put it under both spouts.',
+     brew('short','xstrong',2),
+     'Top with cold milk to about 1 cm below the rim.'],
    tips:[{kind:'tip', text:'Add syrup for an <b>iced mocha</b> or <b>iced caramel latte</b>.'}]},
 
   {id:'affogato', name:'Affogato', cats:['iced'],
    desc:'A hot shot poured over cold ice cream.',
-   base:'Short · Strong', froth:'—', milk:'Vanilla ice cream',
-   steps:['Put a scoop of vanilla ice cream in a glass.','Pour one hot <b>espresso</b> shot over it.']},
+   base:spec('short','xstrong'), froth:'—', milk:'Vanilla ice cream',
+   steps:[
+     'Put a scoop of vanilla ice cream in a glass and put it under the spouts.',
+     brew('short','xstrong',1)]},
 
   {id:'iced-cappuccino', name:'Iced cappuccino', cats:['iced'],
    desc:'A cappuccino, poured over ice.',
-   base:'Short · Strong · 1-cup', froth:'High', milk:'Over ice',
-   steps:['Make a cappuccino (froth dial <b>high</b>, cappuccino button).','Pour it over a glass of ice.'],
+   base:'Cappuccino button · X-strong', froth:'Max', milk:'Over ice',
+   steps:[
+     FIT('max'),
+     AROMA('xstrong'),
+     'Put a cup under the coffee spouts and the milk spout. '+CAP1,
+     'Pour it over a glass full of ice.'],
    tips:[CLEAN_TIP]},
 
   {id:'freddo-espresso', name:'Freddo espresso', orig:'Greek', cats:['iced'],
    desc:'A cold, frothy shaken espresso.',
-   base:'Short · Strong · 2-cup', froth:'—', milk:'—',
+   base:spec('short','xstrong',2), froth:'—', milk:'—',
    steps:[
-     'Pull a strong double espresso and add sugar.',
-     'Whisk or shake it hard with <b>ice</b> until frothy.',
-     'Strain over fresh ice.'],
+     'Put a cup under both spouts.',
+     brew('short','xstrong',2),
+     'Pour it into a shaker or jar with ice and 1–2 tsp sugar. Shake hard until frothy.',
+     'Strain it over fresh ice.'],
    tips:[{kind:'tip', text:'No blender needed.'}]},
 
   {id:'freddo-cappuccino', name:'Freddo cappuccino', orig:'Greek', cats:['iced'],
-   desc:'A freddo espresso under cold milk foam.',
-   base:'Short · Strong · 2-cup', froth:'High', milk:'Cold foam, over ice',
+   desc:'A freddo espresso under milk foam.',
+   base:spec('short','xstrong',2), froth:'Max', milk:'Foam, over ice',
    steps:[
-     'Make a Freddo espresso over ice.',
-     'Froth dial <b>high</b>. '+MILKONLY+' Top with the cold foam.'],
+     'Make a <b>Freddo espresso</b> (Short · Extra-strong · 2-cup, shaken with ice) and strain it over fresh ice.',
+     FIT('max'),
+     'Put the glass under the milk spout. '+MILK('when the foam is about 1 cm below the rim')],
    tips:[CLEAN_TIP]},
 
   {id:'espresso-tonic', name:'Espresso tonic', cats:['iced'],
    desc:'Espresso over iced tonic water.',
-   base:'Short · Strong', froth:'—', milk:'—',
-   steps:['Fill a glass with <b>ice</b>.','Add tonic water.','Pour one <b>espresso</b> on top.']},
+   base:spec('short','xstrong'), froth:'—', milk:'—',
+   steps:[
+     'Fill a glass with <b>ice</b>. Add ≈120 ml (4 oz) tonic water.',
+     'Put the glass under the spouts. '+brew('short','xstrong',1),
+     'The coffee floats on the tonic. Do not stir.']},
 ];
 
 /* ---------------- HOW-TO ---------------- */
@@ -297,7 +363,7 @@ const GUIDE = [
      'Hold the button you want to program. Brewing starts and the light flashes.',
      'Release the button.',
      'Press it again when the cup reaches the volume you want. It is saved.'],
-   tips:[{kind:'official', text:'Factory volumes are about 40 / 80 / 120 / 240 ml. Restore them with menu → <b>Default values</b>.'}]},
+   tips:[{kind:'official', text:'Size dial: Short ≈40 · Standard ≈60 · Long ≈90 · Extra long ≈120 ml. Hot water ≈250 ml. Restore them with menu → <b>Default values</b>.'}]},
 
   {id:'mycoffee', title:'My Coffee', icon:'star', desc:'Save your own drink.',
    steps:[
@@ -311,9 +377,9 @@ const GUIDE = [
    steps:[
      'Fill the carafe (not above <code>MAX</code>), seat the intake tube, refit the lid.',
      'Remove the hot water spout and push the carafe on until it beeps.',
-     'Froth dial: <b>low</b> = flat milk, <b>high</b> = foam.',
-     'One press of <b>cappuccino</b> = milk then coffee. <b>Two presses</b> = milk only.'],
-   tips:[CLEAN_TIP],
+     'Froth dial: <b>HOT MILK</b> = no foam, <b>Min</b> = thin foam, <b>Max</b> = thick foam.',
+     'One press of <b>cappuccino</b> = milk then coffee. <b>Two presses</b> = milk only (one press stops it).'],
+   tips:[MORE, PROG, CLEAN_TIP],
    source:{title:'Cappuccino & milk drinks — De’Longhi How-To', url:'https://www.youtube.com/watch?v=JukCkpAPrdQ'}},
 
   {id:'froth', title:'Milk froth tips', icon:'wave', desc:'Denser, cleaner foam.',
@@ -414,34 +480,38 @@ const CARE = [
 ];
 
 /* ---------------- MUG SIZES ----------------
-   Milk drinks scale with MORE MILK (never water). Black drinks scale with the
-   hot water function. Small drinks stay small — a note points to the right big-mug drink.
-   8 oz ≈ 240 ml, 10 oz ≈ 300 ml, one shot ≈ 35 ml, double ≈ 70 ml. */
+   Each size names the exact coffee setting: [size dial, taste, cups]. A list of settings = brew them in order.
+   The app works out the milk / water / fill level from the official volumes (ML) so every
+   8 oz and 10 oz version is exact: 8 oz mug → fill to 220 ml (7.5 oz), 10 oz → 280 ml (9.5 oz), ~1 cm under the rim.
+   fam: milk = coffee then milk · cap = milk first, coffee through it · chocolate = milk only ·
+        water = coffee + hot water · iced-milk / iced-water = over ice. */
 const SIZE = {
-  cappuccino:{fam:'milk',froth:'high',milk:'steamed milk and foam',shot8:'a single espresso — <b>Short</b>, <b>strong</b>, <b>1-cup</b>',shot10:'a double espresso — <b>Short</b>, <b>strong</b>, <b>2-cup</b>'},
-  latte:{fam:'milk',froth:'low',milk:'steamed milk',shot8:'a single espresso — <b>Short</b>, <b>strong</b>, <b>1-cup</b>',shot10:'a double espresso — <b>Short</b>, <b>strong</b>, <b>2-cup</b>'},
-  'flat-white':{fam:'milk',froth:'low',milk:'steamed milk (keep the foam thin)',shot8:'a double espresso — <b>Short</b>, <b>strong</b>, <b>2-cup</b>',shot10:'a double espresso — <b>Short</b>, <b>strong</b>, <b>2-cup</b>'},
-  'cafe-au-lait':{fam:'milk',froth:'lowest',milk:'hot milk',shot8:'an <b>extra-long</b> coffee — standard strength, <b>1-cup</b>',shot10:'an <b>extra-long</b> coffee — standard strength, <b>1-cup</b> (or two for a fuller mug)'},
-  breve:{fam:'milk',froth:'low',milk:'steamed half-and-half',shot8:'a single espresso — <b>Short</b>, <b>strong</b>, <b>1-cup</b>',shot10:'a double espresso — <b>Short</b>, <b>strong</b>, <b>2-cup</b>'},
-  'cafe-con-leche':{fam:'milk',froth:'low',milk:'hot milk',shot8:'one or two espresso shots — <b>strong</b>',shot10:'a double espresso — <b>strong</b>',tail:'Add sugar to taste and stir.'},
-  galao:{fam:'milk',froth:'low–medium',milk:'steamed milk',shot8:'a single espresso',shot10:'a double espresso'},
-  'wiener-melange':{fam:'milk',froth:'medium–high',milk:'steamed milk, finishing with a foam cap',shot8:'a single espresso',shot10:'a double espresso'},
-  mocha:{fam:'milk',froth:'low–medium',milk:'steamed milk',pre:'Mix 1–2 tsp <b>cocoa</b> (or chocolate syrup) + sugar + a splash of hot water into a paste in the mug.',afterShot:'Pour the espresso onto the chocolate and stir.',shot8:'a single espresso',shot10:'a double espresso'},
-  'hot-chocolate':{fam:'chocolate',froth:'medium–high',milk:'frothed milk',pre:'Mix <b>cocoa</b> + sugar + a little milk into a paste in the mug.'},
-  'latte-macchiato':{fam:'macchiato',froth:'medium',shot8:'a single espresso — <b>Short</b>, <b>strong</b>',shot10:'a double espresso — <b>Short</b>, <b>strong</b>'},
-  'iced-latte':{fam:'iced-milk',froth:'low',milk:'cold milk',shot8:'one or two espresso shots',shot10:'a double espresso'},
-  'iced-cappuccino':{fam:'iced-milk',froth:'high',milk:'cold milk and foam',shot8:'a single espresso',shot10:'a double espresso'},
-  'freddo-cappuccino':{fam:'iced-milk',froth:'high',milk:'cold foam',shot8:'a double espresso, shaken hard with ice until frothy',shot10:'a double espresso, shaken hard with ice until frothy'},
-  lungo:{fam:'water',shot8:'a double espresso (<b>2-cup</b>)',shot10:'two to three espresso shots'},
-  americano:{fam:'water',shot8:'one or two espresso shots — <b>strong</b>',shot10:'a double espresso — <b>strong</b>'},
-  redeye:{fam:'water',topIf:true,shot8:'one <b>long</b> coffee, then one <b>espresso</b> shot on top',shot10:'one <b>extra-long</b> coffee, then one <b>espresso</b> shot on top'},
-  'iced-americano':{fam:'iced-water',cold:'cold water',shot8:'one or two espresso shots',shot10:'a double espresso'},
-  'espresso-tonic':{fam:'iced-water',cold:'tonic water',shot8:'a single espresso',shot10:'a double espresso'},
+  cappuccino:        {fam:'cap',  froth:'max', milk:'milk and foam',      s8:['short','strong',2],   s10:['short','xstrong',2]},
+  'latte-macchiato': {fam:'cap',  froth:'max', milk:'milk and foam',      s8:['short','strong',1],   s10:['short','xstrong',2]},
+  latte:             {fam:'milk', froth:'min', milk:'steamed milk',       s8:['short','strong',2],   s10:['short','xstrong',2]},
+  'flat-white':      {fam:'milk', froth:'min', milk:'smooth milk',        s8:['short','xstrong',2],  s10:['standard','xstrong',2]},
+  'cafe-au-lait':    {fam:'milk', froth:'hot', milk:'hot milk',           s8:['xlong','std',1],      s10:['xlong','strong',1]},
+  breve:             {fam:'milk', froth:'min', milk:'steamed half-and-half', half:true, s8:['short','strong',2], s10:['short','xstrong',2]},
+  'cafe-con-leche':  {fam:'milk', froth:'hot', milk:'hot milk',           s8:['short','xstrong',2],  s10:['standard','xstrong',2], tail:'Add sugar to taste and stir.'},
+  galao:             {fam:'milk', froth:'lowmid', milk:'steamed milk',    s8:['standard','strong',1],s10:['short','strong',2]},
+  'wiener-melange':  {fam:'milk', froth:'mid', milk:'milk and a foam cap',s8:['standard','mild',2],  s10:['standard','std',2]},
+  mocha:             {fam:'milk', froth:'min', milk:'steamed milk',       s8:['short','strong',2],   s10:['short','xstrong',2],
+                      pre:'Mix 1–2 tsp <b>cocoa</b> (or chocolate syrup) + sugar + a splash of hot water into a paste in the mug.',
+                      afterShot:'Stir the coffee into the chocolate.'},
+  'hot-chocolate':   {fam:'chocolate', froth:'mid', milk:'frothed milk',  pre:'Mix <b>cocoa</b> + sugar + a little milk into a paste in the mug.'},
+  'iced-latte':      {fam:'iced-milk', milk:'cold milk',                  s8:['short','xstrong',2],  s10:['standard','xstrong',2]},
+  'iced-cappuccino': {fam:'iced-milk', carafe:true, froth:'max', milk:'milk foam', s8:['short','strong',2], s10:['short','xstrong',2]},
+  'freddo-cappuccino':{fam:'iced-milk', shake:true, carafe:true, froth:'max', milk:'milk foam', s8:['short','xstrong',2], s10:['standard','xstrong',2]},
+  lungo:             {fam:'water', s8:['long','strong',2],   s10:['xlong','strong',2]},
+  americano:         {fam:'water', s8:['short','xstrong',2], s10:['standard','xstrong',2]},
+  redeye:            {fam:'water', s8:[['long','strong',2],['short','xstrong',1]], s10:[['xlong','strong',2],['short','xstrong',1]]},
+  'iced-americano':  {fam:'iced-water', cold:'cold water',  s8:['short','xstrong',2], s10:['standard','xstrong',2]},
+  'espresso-tonic':  {fam:'iced-water', cold:'tonic water', first:true, s8:['short','xstrong',1], s10:['short','xstrong',2]},
 };
 const SIZE_NOTE = {
-  espresso:'An espresso is 1–1.5 oz. For an 8–10 oz mug, make an <b>Americano</b>.',
-  doppio:'A doppio is ~2–3 oz. For a big mug, make an <b>Americano</b> or a <b>latte</b>.',
-  ristretto:'A ristretto is ~1 oz. For a big mug, make an <b>Americano</b>.',
+  espresso:'An espresso is ≈40 ml (1.5 oz). For an 8–10 oz mug, make an <b>Americano</b>.',
+  doppio:'A doppio is ≈80 ml (2.5 oz). For a big mug, make an <b>Americano</b> or a <b>latte</b>.',
+  ristretto:'A ristretto is ≈20 ml (0.5 oz). For a big mug, make an <b>Americano</b>.',
   'con-panna':'Espresso + cream, small. For a big mug, make a <b>latte</b> or <b>mocha</b>.',
   vienna:'Small and cream-topped. For a big mug, make a <b>café au lait</b> with cream.',
   bombon:'Small and layered. For a big mug, make a <b>café con leche</b>.',
