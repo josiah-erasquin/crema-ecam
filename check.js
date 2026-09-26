@@ -3,7 +3,7 @@ const fs=require('fs'),vm=require('vm');
 const app=fs.readFileSync('app.js','utf8');
 const fn=app.slice(app.indexOf('const TARGET='),app.indexOf('function renderDetail'));
 const ctx={console}; vm.createContext(ctx);
-vm.runInContext(fs.readFileSync('data.js','utf8')+'\n'+fn+'\nthis.R=RECIPES;this.sizeSteps=sizeSteps;this.sizeBase=sizeBase;this.coffeeMl=coffeeMl;this.brewsOf=brewsOf;',ctx);
+vm.runInContext(fs.readFileSync('data.js','utf8')+'\n'+fn+'\nthis.R=RECIPES;this.sizeSteps=sizeSteps;this.sizeBase=sizeBase;this.sizeCoffee=sizeCoffee;',ctx);
 let bad=0,n=0;
 for(const r of ctx.R){
   const sets=[['std',r.steps]];
@@ -11,7 +11,7 @@ for(const r of ctx.R){
   for(const [k,st] of sets){ n++;
     const txt=st.join(' ')+(r.size&&k!=='std'?ctx.sizeBase(r.size,k):r.base);
     if(!st.length||/undefined|NaN/.test(txt)){bad++;console.log('BAD',r.id,k,txt.slice(0,200));}
-    if(r.size&&k!=='std'&&r.size[k]){const c=ctx.coffeeMl(ctx.brewsOf(r.size,k)); if(c>({s8:220,s10:280})[k]){bad++;console.log('OVERFLOW',r.id,k,c);}}
+    if(r.size&&k!=='std'&&r.size[k]){const c=ctx.sizeCoffee(r.size,k); if(c>({s8:220,s10:280})[k]){bad++;console.log('OVERFLOW',r.id,k,c);}}
   }
 }
 console.log(n,'step sets checked,',bad,'bad');

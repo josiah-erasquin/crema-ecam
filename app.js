@@ -164,17 +164,22 @@ function sourceRow(src){
 /* Exact 8/10 oz steps from the official volumes: coffee ml comes from the dial setting,
    milk/water = fill target − coffee. Fill target sits ~1 cm under the rim. */
 const TARGET={s8:220,s10:280}, MUGOZ={s8:8,s10:10};
-const brewsOf=(p,size)=>Array.isArray(p[size][0])?p[size]:[p[size]];
+const isCap=p=>p.fam==='cap'||p.fam==='iced-cap';   // one cappuccino press + optional extra shot
+const brewsOf=(p,size)=>isCap(p)?(p[size].plus?[p[size].plus]:[]):Array.isArray(p[size][0])?p[size]:[p[size]];
 const coffeeMl=bs=>bs.reduce((a,b)=>a+ML[b[0]]*(b[2]||1),0);
-const sizeBase=(p,size)=>p[size]?brewsOf(p,size).map(b=>spec(...b)).join(' + '):'Milk only';
+const sizeCoffee=(p,size)=>!p[size]?0:coffeeMl(brewsOf(p,size))+(isCap(p)?CAPML.coffee:0);
+const sizeBase=(p,size)=>!p[size]?'Milk only':
+  [...(isCap(p)?[`Cappuccino button · ${TSHORT[p[size].taste]}`]:[]),...brewsOf(p,size).map(b=>spec(...b))].join(' + ');
 function mugFrac(ml,cap){const r=ml/(cap*29.57);
   return r<0.3?'a quarter':r<0.42?'a third':r<0.58?'half':r<0.71?'two-thirds':'three-quarters';}
 function fillCarafe(p,ml){const n=Math.ceil(ml/100)+1;
   return `Fill the milk carafe with ${p.half?'half-and-half':'milk'} to at least mark <b>${n}</b> (${n*100} ml — each mark is 100 ml; not above <code>MAX</code>). Push it on until it beeps. Set the froth dial to ${FROTH[p.froth]}.`;}
 function sizeSteps(p,size){
   const T=TARGET[size], cap=MUGOZ[size];
-  const bs=p[size]?brewsOf(p,size):[], C=coffeeMl(bs), R=T-C;
+  const bs=p[size]?brewsOf(p,size):[], C=sizeCoffee(p,size), R=T-C;
   const coffee=bs.map((b,i)=>(i?'Leave the mug in place. ':'')+brew(...b));
+  const press=p[size]&&isCap(p)?`Press the aroma button until <b>${TASTE[p[size].taste]}</b> shows. Press <b>cappuccino</b> once. It adds ≈${CAPML.milk} ml of milk, then ≈${CAPML.coffee} ml (${oz(CAPML.coffee)} oz) of coffee.`:'';
+  const plus=bs.length?'Leave the mug in place. '+brew(...bs[0])+' This extra shot keeps the bigger mug strong.':null;
   const full=`≈${T} ml (${oz(T)} oz) — about 1 cm below the rim`;
   const EARLY='If the milk stops early, press <b>cappuccino</b> twice again.';
   const CLEAN='Turn the froth dial to <code>CLEAN</code> and let the auto-clean run.';
@@ -182,23 +187,26 @@ function sizeSteps(p,size){
   switch(p.fam){
     case 'milk': return [p.pre, `Put the ${cap} oz mug under the spouts.`, ...coffee, p.afterShot, fillCarafe(p,R),
       milkTo(`when the mug holds ${full}. That is ≈${R} ml (${oz(R)} oz) of ${p.milk}`), p.tail, CLEAN].filter(Boolean);
-    case 'cap': return [fillCarafe(p,R),
-      `Put the ${cap} oz mug under the coffee spouts and the milk spout. `+milkTo(`at ≈${R} ml (${oz(R)} oz) of ${p.milk} — the mug about ${mugFrac(R,cap)} full`),
-      'Leave the mug in place. '+coffee[0],
-      `The coffee runs down through the foam. The mug now holds ${full}.`, CLEAN];
+    case 'cap':{ const pre=R-CAPML.milk;   // extra milk before the one cappuccino press
+      return [p.pre, fillCarafe(p,R),
+      `Put the ${cap} oz mug under the coffee spouts and the milk spout. `+milkTo(`at ≈${pre} ml (${oz(pre)} oz) of ${p.milk} — the mug about ${mugFrac(pre,cap)} full`),
+      'Leave the mug in place. '+press, plus,
+      `The mug now holds ${full}: ≈${R} ml (${oz(R)} oz) of ${p.milk} and ≈${C} ml (${oz(C)} oz) of coffee.`, p.tail, CLEAN].filter(Boolean);}
+    case 'iced-cap': return [fillCarafe(p,CAPML.milk), `Fill ${cap===8?"an":"a"} ${cap} oz glass with ice.`,
+      'Put a cup under the coffee spouts and the milk spout. '+press, plus&&plus.replace(/mug/g,'drink'), 'Pour it over the ice.', CLEAN].filter(Boolean);
     case 'chocolate': return [p.pre, fillCarafe(p,T),
       `Put the ${cap} oz mug under the milk spout. `+milkTo(`when the mug holds ${full}`), 'Stir well. '+CLEAN];
     case 'water': return [`Put the ${cap} oz mug under the spouts.`, ...coffee,
       R>=20 ? `Fit the hot water spout. Press <b>hot water</b>. Press it again to stop when the mug holds ${full}. That is ≈${R} ml (${oz(R)} oz) of water.`
             : `The mug now holds ${full}. No water needed.`];
     case 'iced-milk': return [
-      ...(p.shake ? [`Put a cup under both spouts.`, ...coffee, 'Pour it into a shaker or jar with ice and 1–2 tsp sugar. Shake hard until frothy.', `Strain it into a ${cap} oz glass full of fresh ice.`]
-                  : [`Fill a ${cap} oz glass with ice. Put it under the spouts.`, ...coffee]),
+      ...(p.shake ? [`Put a cup under both spouts.`, ...coffee, 'Pour it into a shaker or jar with ice and 1–2 tsp sugar. Shake hard until frothy.', `Strain it into ${cap===8?"an":"a"} ${cap} oz glass full of fresh ice.`]
+                  : [`Fill ${cap===8?"an":"a"} ${cap} oz glass with ice. Put it under the spouts.`, ...coffee]),
       ...(p.carafe ? [fillCarafe(p,R), 'Put the glass under the milk spout. '+milkTo('when the foam is about 1 cm below the rim'), CLEAN]
                    : [`Top with ${p.milk} to about 1 cm below the rim.`])];
     case 'iced-water': return p.first
-      ? [`Fill a ${cap} oz glass with ice. Add ${p.cold} to about half the glass.`, 'Put the glass under the spouts. '+coffee[0], `The coffee floats on the ${p.cold}. Do not stir.`]
-      : [`Fill a ${cap} oz glass with ice. Put it under the spouts.`, ...coffee, `Add ${p.cold} to about 1 cm below the rim.`];
+      ? [`Fill ${cap===8?"an":"a"} ${cap} oz glass with ice. Add ${p.cold} to about half the glass.`, 'Put the glass under the spouts. '+coffee[0], `The coffee floats on the ${p.cold}. Do not stir.`]
+      : [`Fill ${cap===8?"an":"a"} ${cap} oz glass with ice. Put it under the spouts.`, ...coffee, `Add ${p.cold} to about 1 cm below the rim.`];
     default: return [];
   }
 }
@@ -240,7 +248,7 @@ function renderDetail(item,kind){
         const db=$('#dbase'); if(db) db.innerHTML=k==='std'?item.base:sizeBase(item.size,k);
         const dm=$('#dmilk'), p=item.size;
         if(dm) dm.innerHTML=(k==='std'||!/^(milk|cap|chocolate)$/.test(p.fam))?item.milk
-          :(r=>`≈${r} ml (${oz(r)} oz)`)(TARGET[k]-(p[k]?coffeeMl(brewsOf(p,k)):0));
+          :(r=>`≈${r} ml (${oz(r)} oz)`)(TARGET[k]-sizeCoffee(p,k));
         fillNote.style.display=k==='std'?'none':'block';
       };
       seg.appendChild(b);

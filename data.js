@@ -29,7 +29,9 @@ const spec  = (s,t,n) => `${DIAL[s]} · ${TSHORT[t]} · ${n||1}-cup`;
 const FIT   = f => `Fill the milk carafe (not above <code>MAX</code>), push it onto the nozzle until it beeps, and set the froth dial to ${FROTH[f]}.`;
 const MILK  = stop => `Press <b>cappuccino</b> twice for milk only. Press <b>cappuccino</b> once to stop ${stop}.`;
 const AROMA = t => `Press the aroma button until <b>${TASTE[t]}</b> shows. (The size dial does not change the cappuccino button — it uses its saved amounts.)`;
-const CAP1  = 'Press <b>cappuccino</b> once. The machine delivers the milk first, then the coffee.';
+/* Cappuccino button default, measured by Jo on this machine (the manual gives no number): ≈60 ml milk, then ≈60 ml coffee. */
+const CAPML = {milk:60, coffee:60};
+const CAP1  = 'Press <b>cappuccino</b> once. The machine delivers ≈60 ml of milk first, then ≈60 ml (2 oz) of coffee — ≈120 ml (4 oz) in the cup.';
 const MORE  = {kind:'official', text:'To add more milk or coffee at the end, press and hold <b>cappuccino</b> within 3 seconds.'};
 const PROG  = {kind:'official', text:'Save your own cappuccino amounts: hold <b>cappuccino</b> until “PROGRAM MILK” shows, release, and press it at the milk level you want. The coffee starts — press again at the coffee level you want.'};
 const CLEAN_TIP = {kind:'official', text:'After the last milk drink, turn the froth dial to <code>CLEAN</code> and let the auto-clean run, then wipe the nozzle.'};
@@ -115,11 +117,11 @@ const RECIPES = [
   /* ---------------- MILK ---------------- */
   {id:'cappuccino', name:'Cappuccino', cats:['milk'],
    desc:'Equal parts espresso, milk, and a thick foam cap.',
-   base:'Cappuccino button · Strong', froth:'Max', milk:'Auto: milk → coffee',
+   base:'Cappuccino button · Strong', froth:'Max', milk:'≈60 ml, then coffee',
    steps:[
      FIT('max'),
      AROMA('strong'),
-     'Put a cup under the coffee spouts and the milk spout. Pull the milk spout down close to the cup.',
+     'Put a 5 oz cup under the coffee spouts and the milk spout. Pull the milk spout down close to the cup.',
      CAP1],
    tips:[MORE, PROG, CLEAN_TIP],
    source:{title:'Cappuccino & milk drinks — De’Longhi How-To', url:'https://www.youtube.com/watch?v=JukCkpAPrdQ'}},
@@ -136,7 +138,7 @@ const RECIPES = [
 
   {id:'latte-macchiato', name:'Latte macchiato', cats:['milk'],
    desc:'Layered: milk first, espresso poured through.',
-   base:'Cappuccino button · Strong', froth:'Max', milk:'Auto: milk → coffee',
+   base:'Cappuccino button · Strong', froth:'Max', milk:'≈60 ml, then coffee',
    steps:[
      FIT('max'),
      AROMA('strong'),
@@ -238,7 +240,7 @@ const RECIPES = [
 
   {id:'mocha', name:'Mocha latte', cats:['milk'],
    desc:'A latte with chocolate stirred through.',
-   base:'Cappuccino button · X-strong', froth:'Min', milk:'Auto: milk → coffee',
+   base:'Cappuccino button · X-strong', froth:'Min', milk:'≈60 ml, then coffee',
    steps:[
      'In the cup, mix 1–2 tsp <b>cocoa</b> (or chocolate syrup) + sugar + a splash of hot water into a paste.',
      FIT('min'),
@@ -486,8 +488,9 @@ const CARE = [
    fam: milk = coffee then milk · cap = milk first, coffee through it · chocolate = milk only ·
         water = coffee + hot water · iced-milk / iced-water = over ice. */
 const SIZE = {
-  cappuccino:        {fam:'cap',  froth:'max', milk:'milk and foam',      s8:['short','strong',2],   s10:['short','xstrong',2]},
-  'latte-macchiato': {fam:'cap',  froth:'max', milk:'milk and foam',      s8:['short','strong',1],   s10:['short','xstrong',2]},
+  /* cap = extra milk first, then ONE cappuccino press (≈60 ml milk + ≈60 ml coffee); plus = an extra shot on top. */
+  cappuccino:        {fam:'cap',  froth:'max', milk:'milk and foam',      s8:{taste:'strong'},  s10:{taste:'xstrong', plus:['short','xstrong',1]}},
+  'latte-macchiato': {fam:'cap',  froth:'max', milk:'milk and foam',      s8:{taste:'strong'},  s10:{taste:'xstrong'}},
   latte:             {fam:'milk', froth:'min', milk:'steamed milk',       s8:['short','strong',2],   s10:['short','xstrong',2]},
   'flat-white':      {fam:'milk', froth:'min', milk:'smooth milk',        s8:['short','xstrong',2],  s10:['standard','xstrong',2]},
   'cafe-au-lait':    {fam:'milk', froth:'hot', milk:'hot milk',           s8:['xlong','std',1],      s10:['xlong','strong',1]},
@@ -495,12 +498,12 @@ const SIZE = {
   'cafe-con-leche':  {fam:'milk', froth:'hot', milk:'hot milk',           s8:['short','xstrong',2],  s10:['standard','xstrong',2], tail:'Add sugar to taste and stir.'},
   galao:             {fam:'milk', froth:'lowmid', milk:'steamed milk',    s8:['standard','strong',1],s10:['short','strong',2]},
   'wiener-melange':  {fam:'milk', froth:'mid', milk:'milk and a foam cap',s8:['standard','mild',2],  s10:['standard','std',2]},
-  mocha:             {fam:'milk', froth:'min', milk:'steamed milk',       s8:['short','strong',2],   s10:['short','xstrong',2],
+  mocha:             {fam:'cap',  froth:'min', milk:'steamed milk',       s8:{taste:'strong'},  s10:{taste:'xstrong', plus:['short','xstrong',1]},
                       pre:'Mix 1–2 tsp <b>cocoa</b> (or chocolate syrup) + sugar + a splash of hot water into a paste in the mug.',
-                      afterShot:'Stir the coffee into the chocolate.'},
+                      tail:'Stir well.'},
   'hot-chocolate':   {fam:'chocolate', froth:'mid', milk:'frothed milk',  pre:'Mix <b>cocoa</b> + sugar + a little milk into a paste in the mug.'},
   'iced-latte':      {fam:'iced-milk', milk:'cold milk',                  s8:['short','xstrong',2],  s10:['standard','xstrong',2]},
-  'iced-cappuccino': {fam:'iced-milk', carafe:true, froth:'max', milk:'milk foam', s8:['short','strong',2], s10:['short','xstrong',2]},
+  'iced-cappuccino': {fam:'iced-cap', froth:'max', s8:{taste:'strong'}, s10:{taste:'xstrong', plus:['short','xstrong',1]}},
   'freddo-cappuccino':{fam:'iced-milk', shake:true, carafe:true, froth:'max', milk:'milk foam', s8:['short','xstrong',2], s10:['standard','xstrong',2]},
   lungo:             {fam:'water', s8:['long','strong',2],   s10:['xlong','strong',2]},
   americano:         {fam:'water', s8:['short','xstrong',2], s10:['standard','xstrong',2]},

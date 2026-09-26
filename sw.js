@@ -1,5 +1,5 @@
 /* Crema service worker — network-first for app files (fresh when online), cache as offline fallback. */
-const VERSION = 'crema-v13';
+const VERSION = 'crema-v14';
 const CORE = [
   './',
   'index.html',
